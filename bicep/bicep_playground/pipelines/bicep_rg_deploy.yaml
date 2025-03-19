@@ -1,0 +1,124 @@
+parameters:
+- name: deployToNonProd
+  displayName: "Deploy to Non-Production"
+  type: boolean
+  default: false
+
+- name: deployToProd
+  displayName: "Deploy to Production"
+  type: boolean
+  default: false
+
+trigger: none
+
+pool:
+  name: lenovo_mini_pool
+
+stages:
+- stage: Validate_ResourceGroup_NonProd
+  displayName: "What-If: Resource Group (Non-Prod)"
+  condition: eq(${{ parameters.deployToNonProd }}, true)
+  jobs:
+  - job: RG_WhatIf
+    displayName: "Run What-If for Resource Group"
+    steps:
+    - task: AzureCLI@2
+      displayName: "What-If Resource Group"
+      inputs:
+        azureSubscription: "Azure_payg_service_connection"
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          az deployment sub what-if \
+            --template-file $(Build.SourcesDirectory)/bicep/nonprod/resource_group.bicep \
+            --parameters @$(Build.SourcesDirectory)/bicep/nonprod/rg.parameters.json \
+            --location 'northeurope'
+
+- stage: Manual_Validation_RG_NonProd
+  displayName: "Manual Validation: Resource Group (Non-Prod)"
+  condition: and(succeeded(), eq(${{ parameters.deployToNonProd }}, true))
+  jobs:
+  - job: WaitForRGApproval
+    displayName: "Manual Validation Step"
+    pool: server
+    timeoutInMinutes: 1440
+    steps:
+    - task: ManualValidation@0
+      inputs:
+        notifyUsers: 'r.mccarthy98@outlook.com'
+        instructions: "Review What-If for Non-Prod Resource Group before proceeding."
+        onTimeout: 'reject'
+
+- stage: Deploy_ResourceGroup_NonProd
+  displayName: "Deploy Resource Group (Non-Prod)"
+  condition: and(succeeded(), eq(${{ parameters.deployToNonProd }}, true))
+  jobs:
+  - job: RG_Deployment
+    displayName: "Deploy Resource Group"
+    steps:
+    - task: AzureCLI@2
+      displayName: "Deploy Resource Group"
+      inputs:
+        azureSubscription: "Azure_payg_service_connection"
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          az deployment sub create \
+            --template-file $(Build.SourcesDirectory)/bicep/nonprod/resource_group.bicep \
+            --parameters @$(Build.SourcesDirectory)/bicep/nonprod/rg.parameters.json \
+            --location 'northeurope'
+
+- stage: Validate_ResourceGroup_Prod
+  displayName: "What-If: Resource Group (Prod)"
+  condition: eq(${{ parameters.deployToProd }}, true)
+  jobs:
+  - job: RG_WhatIf
+    displayName: "Run What-If for Resource Group"
+    steps:
+    - task: AzureCLI@2
+      displayName: "What-If Resource Group"
+      inputs:
+        azureSubscription: "Azure_payg_service_connection"
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          az deployment sub what-if \
+            --template-file $(Build.SourcesDirectory)/bicep/prod/resource_group.bicep \
+            --parameters @$(Build.SourcesDirectory)/bicep/prod/rg.parameters.json \
+            --location 'northeurope'
+
+- stage: Manual_Validation_RG_Prod
+  displayName: "Manual Validation: Resource Group (Prod)"
+  dependsOn: Validate_ResourceGroup_Prod
+  condition: and(succeeded(), eq(${{ parameters.deployToProd }}, true))
+  jobs:
+  - job: WaitForRGApproval
+    displayName: "Manual Validation Step"
+    pool: server
+    timeoutInMinutes: 1440
+    steps:
+    - task: ManualValidation@0
+      inputs:
+        notifyUsers: 'r.mccarthy98@outlook.com'
+        instructions: "Review What-If for Prod Resource Group before proceeding."
+        onTimeout: 'reject'
+
+- stage: Deploy_ResourceGroup_Prod
+  displayName: "Deploy Resource Group (Prod)"
+  dependsOn: Manual_Validation_RG_Prod
+  condition: and(succeeded(), eq(${{ parameters.deployToProd }}, true))
+  jobs:
+  - job: RG_Deployment
+    displayName: "Deploy Resource Group"
+    steps:
+    - task: AzureCLI@2
+      displayName: "Deploy Resource Group"
+      inputs:
+        azureSubscription: "Azure_payg_service_connection"
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          az deployment sub create \
+            --template-file $(Build.SourcesDirectory)/bicep/prod/resource_group.bicep \
+            --parameters @$(Build.SourcesDirectory)/bicep/prod/rg.parameters.json \
+            --location 'northeurope'

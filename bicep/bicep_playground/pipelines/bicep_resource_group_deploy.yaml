@@ -1,0 +1,135 @@
+parameters:
+- name: deployToNonProd
+  displayName: "Deploy to Non-Production"
+  type: boolean
+  default: false
+
+- name: deployToProd
+  displayName: "Deploy to Production"
+  type: boolean
+  default: false
+
+- name: nonprodResourceGroupName
+  displayName: "Enter the name of the Non-Production RG to deploy the resources"
+  type: string
+
+- name: prodResourceGroupName
+  displayName: "Enter the name of the Production RG to deploy the resources"
+  type: string
+
+trigger: none
+
+pool:
+  name: lenovo_mini_pool
+
+stages:
+- stage: Validate_Resources_NonProd
+  displayName: "What-If: Resources (Non-Prod)"
+  condition: and(succeeded(), eq(${{ parameters.deployToNonProd }}, true))
+  jobs:
+  - job: Resources_WhatIf
+    displayName: "Run What-If for Resources"
+    steps:
+    - task: AzureCLI@2
+      displayName: "What-If Resources"
+      inputs:
+        azureSubscription: "Azure_payg_service_connection"
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          az deployment group what-if \
+            --template-file $(Build.SourcesDirectory)/bicep/nonprod/main.bicep \
+            --parameters @$(Build.SourcesDirectory)/bicep/nonprod/main.parameters.json \
+            --resource-group ${{ parameters.nonprodResourceGroupName }}
+
+- stage: Manual_Validation_Resources_NonProd
+  displayName: "Manual Validation: Resources (Non-Prod)"
+  dependsOn: Validate_Resources_NonProd
+  condition: and(succeeded(), eq(${{ parameters.deployToNonProd }}, true))
+  jobs:
+  - job: WaitForResourcesApproval
+    displayName: "Manual Validation Step"
+    pool: server
+    timeoutInMinutes: 1440
+    steps:
+    - task: ManualValidation@0
+      inputs:
+        notifyUsers: 'r.mccarthy98@outlook.com'
+        instructions: "Review What-If for Non-Prod Resources before proceeding."
+        onTimeout: 'reject'
+
+- stage: Deploy_Resources_NonProd
+  displayName: "Deploy Resources (Non-Prod)"
+  dependsOn: Manual_Validation_Resources_NonProd
+  condition: and(succeeded(), eq(${{ parameters.deployToNonProd }}, true))
+  jobs:
+  - job: Resources_Deployment
+    displayName: "Deploy Resources"
+    steps:
+    - task: AzureCLI@2
+      displayName: "Deploy Resources"
+      inputs:
+        azureSubscription: "Azure_payg_service_connection"
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          az deployment group create \
+            --template-file $(Build.SourcesDirectory)/bicep/nonprod/main.bicep \
+            --parameters @$(Build.SourcesDirectory)/bicep/nonprod/main.parameters.json \
+            --resource-group ${{ parameters.nonprodResourceGroupName }}
+
+
+- stage: Validate_Resources_Prod
+  displayName: "What-If: Resources (Prod)"
+  condition: and(succeeded(), eq(${{ parameters.deployToProd }}, true))
+  jobs:
+  - job: Resources_WhatIf
+    displayName: "Run What-If for Resources"
+    steps:
+    - task: AzureCLI@2
+      displayName: "What-If Resources"
+      inputs:
+        azureSubscription: "Azure_payg_service_connection"
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          az deployment group what-if \
+            --template-file $(Build.SourcesDirectory)/bicep/prod/main.bicep \
+            --parameters @$(Build.SourcesDirectory)/bicep/prod/main.parameters.json \
+            --resource-group ${{ parameters.prodResourceGroupName }}
+
+- stage: Manual_Validation_Resources_Prod
+  displayName: "Manual Validation: Resources (Prod)"
+  dependsOn: Validate_Resources_Prod
+  condition: and(succeeded(), eq(${{ parameters.deployToProd }}, true))
+  jobs:
+  - job: WaitForResourcesApproval
+    displayName: "Manual Validation Step"
+    pool: server
+    timeoutInMinutes: 1440
+    steps:
+    - task: ManualValidation@0
+      inputs:
+        notifyUsers: 'r.mccarthy98@outlook.com'
+        instructions: "Review What-If for Prod Resources before proceeding."
+        onTimeout: 'reject'
+
+- stage: Deploy_Resources_Prod
+  displayName: "Deploy Resources (Prod)"
+  dependsOn: Manual_Validation_Resources_Prod
+  condition: and(succeeded(), eq(${{ parameters.deployToProd }}, true))
+  jobs:
+  - job: Resources_Deployment
+    displayName: "Deploy Resources"
+    steps:
+    - task: AzureCLI@2
+      displayName: "Deploy Resources"
+      inputs:
+        azureSubscription: "Azure_payg_service_connection"
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          az deployment group create \
+            --template-file $(Build.SourcesDirectory)/bicep/prod/main.bicep \
+            --parameters @$(Build.SourcesDirectory)/bicep/prod/main.parameters.json \
+            --resource-group ${{ parameters.prodResourceGroupName }}
