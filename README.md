@@ -10,7 +10,7 @@ This repo is designed for experimenting with **Bicep modules, module parameters*
 ## Pipelines Workflow:
 # There are two seperate Pipelines. Once creates the RG's passing paramaters from the bicep module call. The other pipeline creates the resources, this pipeline requires you to enter the RG name. More info about this in tech debt section
 # RG What-If Pipeline
-![RG Pipeline - What-If](image-3.png)
+![RG Pipeline - What-If](bicep/bicep_playground/image-3.png)
 # RG deployment based on product name and env params
 ![RG deployment based on product name and env params](image-2.png)
 Resources What-If Pipeline Run
