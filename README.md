@@ -12,11 +12,11 @@ This repo is designed for experimenting with **Bicep modules, module parameters*
 # RG What-If Pipeline
 ![RG Pipeline - What-If](bicep/bicep_playground/image-3.png)
 # RG deployment based on product name and env params
-![RG deployment based on product name and env params](image-2.png)
+![RG deployment based on product name and env params](bicep/bicep_playground/image-2.png)
 Resources What-If Pipeline Run
-![What-If Pipeline Run](image-1.png)
+![What-If Pipeline Run](bicep/bicep_playground/image-1.png)
 Resources Deployed in Azure
-![Resources Deployed in Azure](image.png)
+![Resources Deployed in Azure](bicep/bicep_playground/image.png)
 
 
 ## Tech Debt / if I had more time
