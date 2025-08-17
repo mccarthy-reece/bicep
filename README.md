@@ -1,26 +1,30 @@
 # Bicep Playground
 
-This repo is designed for experimenting with **Bicep modules, module parameters**, and overall best practices for Infrastructure as Code (IaC) using **Bicep** in Azure.
+This repo is for experimenting with **Bicep modules, parameters**, and testing out best practices for Infrastructure as Code (IaC) in Azure.
 
 ## Features
--  **Experiment with Bicep modules**
--  **Test various module parameters and configurations**
--  **Validate deployment best practices**
+- Try out different **Bicep modules**
+- Test various **module parameters and configurations**
+- Validate **deployment best practices**
 
-## Pipelines Workflow:
-There are two seperate Pipelines. Once creates the RG's passing paramaters from the bicep module call. The other pipeline creates the resources, this pipeline requires you to enter the RG name. More info about this in tech debt section
-# RG What-If Pipeline
-![RG Pipeline - What-If](bicep/bicep_playground/image-3.png)
-# RG deployment based on product name and env params
-![RG deployment based on product name and env params](bicep/bicep_playground/image-2.png)
-Resources What-If Pipeline Run
-![What-If Pipeline Run](bicep/bicep_playground/image-1.png)
-Resources Deployed in Azure
-![Resources Deployed in Azure](bicep/bicep_playground/image.png)
+## Pipelines Workflow
+There are two separate pipelines:
 
+1. **Resource Group Pipeline**  
+   Creates RGs by passing parameters from the Bicep module call.  
+   ![RG Pipeline - What-If](bicep/bicep_playground/image-3.png)  
 
-## Tech Debt / if I had more time
+2. **Resource Deployment Pipeline**  
+   Deploys resources into the RG. Currently, you need to manually enter the RG name (see Tech Debt section).  
+   ![RG deployment based on product name and env params](bicep/bicep_playground/image-2.png)  
 
-- **Pass RG name as an output and then pass this to resource deployment stage so no manual names are needed**
-- **Enable SFTP on the SA (This was due to cost)**
-- **Allow SSH keys to be pulled from a KV that then setsup the SSH permission**
+**What-If example run:**  
+![What-If Pipeline Run](bicep/bicep_playground/image-1.png)  
+
+**Deployed resources in Azure:**  
+![Resources Deployed in Azure](bicep/bicep_playground/image.png)  
+
+## Tech Debt / Improvements if I had more time
+- Pass the RG name as an output, then feed this into the resource deployment stage so manual input isn’t needed  
+- Enable SFTP on the Storage Account (skipped due to cost)  
+- Pull SSH keys from a Key Vault and set up SSH access automatically  
